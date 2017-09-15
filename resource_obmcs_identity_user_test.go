@@ -16,7 +16,7 @@ import (
 
 type ResourceIdentityUserTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
 	TimeCreated  time.Time
@@ -35,22 +35,22 @@ func (s *ResourceIdentityUserTestSuite) SetupTest() {
 	)
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.TimeCreated, _ = time.Parse("2006-Jan-02", "2006-Jan-02")
 	s.Config = `
-		resource "baremetal_identity_user" "t" {
-			name = "name1"
-			description = "desc!"
+		resource "oci_identity_user" "t" {
+			name = "-tf-user"
+			description = "automated test user"
 		}
 	`
 	s.Config += testProviderConfig()
 
-	s.ResourceName = "baremetal_identity_user.t"
+	s.ResourceName = "oci_identity_user.t"
 	s.Res = &baremetal.User{
 		ID:            "id!",
-		Name:          "name1",
-		Description:   "desc!",
+		Name:          "-tf-user",
+		Description:   "automated test user",
 		CompartmentID: "cid!",
 		State:         baremetal.ResourceActive,
 		TimeCreated:   s.TimeCreated,
@@ -80,9 +80,6 @@ func (s *ResourceIdentityUserTestSuite) TestCreateResourceIdentityUser() {
 }
 
 func (s *ResourceIdentityUserTestSuite) TestCreateResourceIdentityUserPolling() {
-	if IsAccTest() {
-		s.T().Skip()
-	}
 	s.Res.State = baremetal.ResourceCreating
 
 	u := *s.Res
@@ -106,10 +103,9 @@ func (s *ResourceIdentityUserTestSuite) TestCreateResourceIdentityUserPolling() 
 func (s *ResourceIdentityUserTestSuite) TestUpdateResourceIdentityUserDescription() {
 
 	c := `
-
-		resource "baremetal_identity_user" "t" {
-			name = "name1"
-			description = "newdesc!"
+		resource "oci_identity_user" "t" {
+			name = "-tf-user"
+			description = "automated test user updated"
 		}
 	`
 	c += testProviderConfig()
@@ -125,7 +121,7 @@ func (s *ResourceIdentityUserTestSuite) TestUpdateResourceIdentityUserDescriptio
 			{
 				Config: c,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(s.ResourceName, "description", "newdesc!"),
+					resource.TestCheckResourceAttr(s.ResourceName, "description", "automated test user updated"),
 				),
 			},
 		},
@@ -135,9 +131,9 @@ func (s *ResourceIdentityUserTestSuite) TestUpdateResourceIdentityUserDescriptio
 func (s *ResourceIdentityUserTestSuite) TestUpdateResourceIdentityUserNameShouldCreateNew() {
 
 	c := `
-		resource "baremetal_identity_user" "t" {
-			name = "newname1"
-			description = "desc!"
+		resource "oci_identity_user" "t" {
+			name = "-tf-user2"
+			description = "automated test user"
 		}
 	`
 
@@ -154,7 +150,7 @@ func (s *ResourceIdentityUserTestSuite) TestUpdateResourceIdentityUserNameShould
 			{
 				Config: c,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(s.ResourceName, "name", "newname1"),
+					resource.TestCheckResourceAttr(s.ResourceName, "name", "-tf-user2"),
 				),
 			},
 		},

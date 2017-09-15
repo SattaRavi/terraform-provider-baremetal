@@ -5,8 +5,8 @@ package main
 import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func DBSystemResource() *schema.Resource {
@@ -72,6 +72,7 @@ func DBSystemResource() *schema.Resource {
 						"database": {
 							Type:     schema.TypeList,
 							Required: true,
+							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -79,26 +80,36 @@ func DBSystemResource() *schema.Resource {
 										Type:      schema.TypeString,
 										Required:  true,
 										Sensitive: true,
+										ForceNew:  true,
 									},
 									"db_name": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 									"db_workload": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
+										Computed: true,
 									},
 									"character_set": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
+										Computed: true,
 									},
 									"ncharacter_set": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
+										Computed: true,
 									},
 									"pdb_name": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
+										Computed: true,
 									},
 								},
 							},
@@ -106,10 +117,13 @@ func DBSystemResource() *schema.Resource {
 						"db_version": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"display_name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
+							ForceNew: true,
 						},
 					},
 				},
@@ -139,16 +153,18 @@ func DBSystemResource() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 			},
-			/*"backup_subnet_id": {
+			"backup_subnet_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"cluster_name": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 				ForceNew: true,
-			},*/
+			},
 			"data_storage_percentage": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -204,7 +220,7 @@ func DBSystemResource() *schema.Resource {
 }
 
 func createDBSystem(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DBSystemResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -212,7 +228,7 @@ func createDBSystem(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readDBSystem(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DBSystemResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -220,7 +236,7 @@ func readDBSystem(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteDBSystem(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DBSystemResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -309,12 +325,12 @@ func (s *DBSystemResourceCrud) Create() (e error) {
 	}
 
 	opts := &baremetal.LaunchDBSystemOptions{}
-	/*if backupSubnetId, ok := s.D.GetOk("backup_subnet_id"); ok {
+	if backupSubnetId, ok := s.D.GetOk("backup_subnet_id"); ok {
 		opts.BackupSubnetId = backupSubnetId.(string)
 	}
 	if clusterName, ok := s.D.GetOk("cluster_name"); ok {
 		opts.ClusterName = clusterName.(string)
-	}*/
+	}
 	if dataStoragePercentage, ok := s.D.GetOk("data_storage_percentage"); ok {
 		opts.DataStoragePercentage = dataStoragePercentage.(int)
 	}
@@ -349,7 +365,8 @@ func (s *DBSystemResourceCrud) SetData() {
 	s.D.Set("cpu_core_count", s.Res.CPUCoreCount)
 	s.D.Set("database_edition", s.Res.DatabaseEdition)
 	s.D.Set("db_home", s.Res.DBHome)
-	s.D.Set("hostname", s.Res.Hostname)
+	//leave hostname commented out. Refreshing hostname causes problems because API adds suffix in some cases (like Exadata).
+	//s.D.Set("hostname", s.Res.Hostname)
 	s.D.Set("shape", s.Res.Shape)
 	s.D.Set("ssh_public_keys", s.Res.SSHPublicKeys)
 	s.D.Set("subnet_id", s.Res.SubnetID)

@@ -3,15 +3,13 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/MustWin/baremetal-sdk-go"
 
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 // ResourceIdentityCompartment exposes an IdentityCompartment Resource
@@ -30,7 +28,7 @@ func CompartmentResource() *schema.Resource {
 }
 
 func createCompartment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &CompartmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -38,7 +36,7 @@ func createCompartment(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readCompartment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &CompartmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -46,7 +44,7 @@ func readCompartment(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updateCompartment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &CompartmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -57,7 +55,6 @@ func deleteCompartment(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &CompartmentResourceCrud{}
 	sync.D = d
 	return crud.DeleteResource(d, sync)
-	return fmt.Errorf("compartment resource: compartment %v cannot be deleted", d.Id())
 }
 
 type CompartmentResourceCrud struct {

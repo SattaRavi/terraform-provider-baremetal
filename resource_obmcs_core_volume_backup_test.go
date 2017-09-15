@@ -7,7 +7,6 @@ import (
 
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/stretchr/testify/suite"
@@ -15,10 +14,9 @@ import (
 
 type ResourceCoreVolumeBackupTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
-	TimeCreated  baremetal.Time
 	Config       string
 	ResourceName string
 	Res          *baremetal.VolumeBackup
@@ -26,33 +24,20 @@ type ResourceCoreVolumeBackupTestSuite struct {
 }
 
 func (s *ResourceCoreVolumeBackupTestSuite) SetupTest() {
-	s.Client = GetTestProvider()
-
-	s.Provider = Provider(
-		func(d *schema.ResourceData) (interface{}, error) {
-			return s.Client, nil
-		},
-	)
-	s.Providers = map[string]terraform.ResourceProvider{"baremetal": s.Provider}
-
-	s.ResourceName = "baremetal_core_volume_backup.t"
-	s.Config = `
-		data "baremetal_identity_availability_domains" "ADs" {
+	s.Client = testAccClient
+	s.Provider = testAccProvider
+	s.Providers = testAccProviders
+	s.Config = testProviderConfig() + `
+		data "oci_identity_availability_domains" "ADs" {
   			compartment_id = "${var.compartment_id}"
 		}
-		resource "baremetal_core_volume" "t" {
-			availability_domain = "${data.baremetal_identity_availability_domains.ADs.availability_domains.0.name}"
+		resource "oci_core_volume" "t" {
+			availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
 			compartment_id = "${var.compartment_id}"
-			display_name = "display_name"
-			size_in_mbs = 262144
-		}
-		resource "baremetal_core_volume_backup" "t" {
-			volume_id = "${baremetal_core_volume.t.id}"
-			display_name = "display_name"
-		}
-	`
-	s.Config += testProviderConfig()
-
+			display_name = "-tf-volume"
+			size_in_mbs = 51200
+		}`
+	s.ResourceName = "oci_core_volume_backup.t"
 }
 
 func (s *ResourceCoreVolumeBackupTestSuite) TestCreateVolumeBackup() {
@@ -60,98 +45,53 @@ func (s *ResourceCoreVolumeBackupTestSuite) TestCreateVolumeBackup() {
 	resource.UnitTest(s.T(), resource.TestCase{
 		Providers: s.Providers,
 		Steps: []resource.TestStep{
+			// verify create
 			{
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            s.Config,
+				Config: s.Config + `
+					resource "oci_core_volume_backup" "t" {
+						volume_id = "${oci_core_volume.t.id}"
+					}`,
 				Check: resource.ComposeTestCheckFunc(
-
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "display_name"),
 					resource.TestCheckResourceAttrSet(s.ResourceName, "id"),
-					resource.TestCheckResourceAttr(s.ResourceName, "state", baremetal.ResourceAvailable),
-					resource.TestCheckResourceAttrSet(s.ResourceName, "time_created"),
 					resource.TestCheckResourceAttrSet(s.ResourceName, "volume_id"),
+					resource.TestCheckResourceAttrSet(s.ResourceName, "display_name"),
+					resource.TestCheckResourceAttrSet(s.ResourceName, "time_created"),
+					resource.TestCheckResourceAttr(s.ResourceName, "state", baremetal.ResourceAvailable),
 				),
 			},
-		},
-	})
-}
-
-func (s *ResourceCoreVolumeBackupTestSuite) TestCreateVolumeBackupWithoutDisplayName() {
-	if IsAccTest() {
-		s.T().Skip()
-	}
-
-	s.Config = `
-		resource "baremetal_core_volume_backup" "t" {
-			volume_id = "volume_id"
-		}
-	`
-	s.Config += testProviderConfig()
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
+			// verify update
 			{
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config:            s.Config,
+				Config: s.Config + `
+					resource "oci_core_volume_backup" "t" {
+						volume_id = "${oci_core_volume.t.id}"
+						display_name = "-tf-volume-backup"
+					}`,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", s.Res.DisplayName),
+					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "-tf-volume-backup"),
 				),
 			},
-		},
-	})
-}
-
-func (s ResourceCoreVolumeBackupTestSuite) TestUpdateVolumeBackupDisplayName() {
-	if IsAccTest() {
-		s.T().Skip()
-	}
-
-	config := `
-		resource "baremetal_core_volume_backup" "t" {
-			volume_id = "volume_id"
-			display_name = "new_display_name"
-		}
-	`
-	config += testProviderConfig()
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
+			// verify restore
 			{
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config:            s.Config,
-			},
-			{
-				Config: config,
+				Config: s.Config + `
+					resource "oci_core_volume_backup" "t" {
+						volume_id = "${oci_core_volume.t.id}"
+						display_name = "-tf-volume-backup"
+					}
+					resource "oci_core_volume" "t2" {
+						availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
+						compartment_id = "${var.compartment_id}"
+						display_name = "-tf-volume-restored"
+						size_in_mbs = 51200
+						volume_backup_id = "${oci_core_volume_backup.t.id}"
+					}`,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "new_display_name"),
+					resource.TestCheckResourceAttr("oci_core_volume.t2", "display_name", "-tf-volume-restored"),
 				),
 			},
 		},
 	})
-}
-
-func (s *ResourceCoreVolumeBackupTestSuite) TestDeleteVolumeBackup() {
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
-			{
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config:            s.Config,
-			},
-			{
-				Config:  s.Config,
-				Destroy: true,
-			},
-		},
-	})
-
 }
 
 func TestResourceCoreVolumeBackupTestSuite(t *testing.T) {

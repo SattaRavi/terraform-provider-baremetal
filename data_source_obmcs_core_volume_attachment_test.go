@@ -5,6 +5,7 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,7 +15,7 @@ import (
 
 type ResourceCoreVolumeAttachmentsTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -28,24 +29,24 @@ func (s *ResourceCoreVolumeAttachmentsTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = instanceConfig + `
-		resource "baremetal_core_volume" "t" {
-			availability_domain = "${data.baremetal_identity_availability_domains.ADs.availability_domains.0.name}"
+		resource "oci_core_volume" "t" {
+			availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
 			compartment_id = "${var.compartment_id}"
 			display_name = "display_name"
 			size_in_mbs = 262144
 		}
-		resource "baremetal_core_volume_attachment" "t" {
+		resource "oci_core_volume_attachment" "t" {
 			attachment_type = "iscsi"
 			compartment_id = "${var.compartment_id}"
-			instance_id = "${baremetal_core_instance.t.id}"
-			volume_id = "${baremetal_core_volume.t.id}"
+			instance_id = "${oci_core_instance.t.id}"
+			volume_id = "${oci_core_volume.t.id}"
 		}
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_volume_attachments.t"
+	s.ResourceName = "data.oci_core_volume_attachments.t"
 }
 
 func (s *ResourceCoreVolumeAttachmentsTestSuite) TestReadVolumeAttachments() {
@@ -60,12 +61,12 @@ func (s *ResourceCoreVolumeAttachmentsTestSuite) TestReadVolumeAttachments() {
 			},
 			{
 				Config: s.Config + `
-				    data "baremetal_core_volume_attachments" "t" {
-				      availability_domain = "${data.baremetal_identity_availability_domains.ADs.availability_domains.0.name}"
+				    data "oci_core_volume_attachments" "t" {
+				      availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
 				      compartment_id = "${var.compartment_id}"
 				      limit = 1
-				      instance_id = "${baremetal_core_instance.t.id}"
-				      volume_id = "${baremetal_core_volume.t.id}"
+				      instance_id = "${oci_core_instance.t.id}"
+				      volume_id = "${oci_core_volume.t.id}"
 				    }`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(s.ResourceName, "availability_domain"),

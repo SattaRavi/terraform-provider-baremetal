@@ -6,10 +6,9 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
+	"fmt"
+	"github.com/oracle/terraform-provider-oci/crud"
 	"time"
-
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
 )
 
 func RouteTableResource() *schema.Resource {
@@ -39,7 +38,7 @@ func RouteTableResource() *schema.Resource {
 			},
 			"route_rules": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cidr_block": {
@@ -75,7 +74,7 @@ func RouteTableResource() *schema.Resource {
 }
 
 func createRouteTable(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	crd := &RouteTableResourceCrud{}
 	crd.D = d
 	crd.Client = client
@@ -83,7 +82,7 @@ func createRouteTable(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readRouteTable(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	crd := &RouteTableResourceCrud{}
 	crd.D = d
 	crd.Client = client
@@ -91,7 +90,7 @@ func readRouteTable(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updateRouteTable(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	crd := &RouteTableResourceCrud{}
 	crd.D = d
 	crd.Client = client
@@ -99,7 +98,7 @@ func updateRouteTable(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteRouteTable(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	crd := &RouteTableResourceCrud{}
 	crd.D = d
 	crd.Client = client
@@ -142,7 +141,13 @@ func (s *RouteTableResourceCrud) Create() (e error) {
 	opts := &baremetal.CreateOptions{}
 	opts.DisplayName = s.D.Get("display_name").(string)
 
-	s.Res, e = s.Client.CreateRouteTable(compartmentID, vcnID, s.buildRouteRules(), opts)
+	rr, e := s.buildRouteRules()
+
+	if e != nil {
+		return e
+	}
+
+	s.Res, e = s.Client.CreateRouteTable(compartmentID, vcnID, rr, opts)
 
 	return
 }
@@ -159,7 +164,11 @@ func (s *RouteTableResourceCrud) Update() (e error) {
 		opts.DisplayName = displayName.(string)
 	}
 
-	opts.RouteRules = s.buildRouteRules()
+	opts.RouteRules, e = s.buildRouteRules()
+
+	if e != nil {
+		return e
+	}
 
 	s.Res, e = s.Client.UpdateRouteTable(s.D.Id(), opts)
 	return
@@ -192,9 +201,14 @@ func (s *RouteTableResourceCrud) ExtraWaitPostCreateDelete() time.Duration {
 	return time.Duration(15 * time.Second)
 }
 
-func (s *RouteTableResourceCrud) buildRouteRules() (routeRules []baremetal.RouteRule) {
+func (s *RouteTableResourceCrud) buildRouteRules() (routeRules []baremetal.RouteRule, e error) {
 	routeRules = []baremetal.RouteRule{}
 	for _, val := range s.D.Get("route_rules").([]interface{}) {
+
+		if val == nil {
+			return nil, fmt.Errorf("Empty route_rules are not permitted. Instead, the route_rules block may be omitted entirely.")
+		}
+
 		data := val.(map[string]interface{})
 		routeRule := baremetal.RouteRule{
 			CidrBlock:       data["cidr_block"].(string),

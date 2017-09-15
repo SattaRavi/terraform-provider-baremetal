@@ -5,6 +5,7 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,7 +15,7 @@ import (
 
 type ResourceCoreInstanceCredentialTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -28,15 +29,15 @@ func (s *ResourceCoreInstanceCredentialTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = instanceConfig + `
-    data "baremetal_core_instance_credentials" "s" {
-      instance_id = "${baremetal_core_instance.t.id}"
+    data "oci_core_instance_credentials" "s" {
+      instance_id = "${oci_core_instance.t.id}"
     }
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_instance_credentials.s"
+	s.ResourceName = "data.oci_core_instance_credentials.s"
 
 }
 

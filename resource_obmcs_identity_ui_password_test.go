@@ -16,7 +16,7 @@ import (
 
 type ResourceIdentityUIPasswordTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
 	TimeCreated  baremetal.Time
@@ -35,23 +35,22 @@ func (s *ResourceIdentityUIPasswordTestSuite) SetupTest() {
 	)
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 
 	s.Config = `
-		resource "baremetal_identity_user" "t" {
-			name = "name1"
-			description = "desc!"
+		resource "oci_identity_user" "t" {
+			name = "-tf-user"
+			description = "automated test user"
 		}
-		resource "baremetal_identity_ui_password" "t" {
-			user_id = "${baremetal_identity_user.t.id}"
-			version = "1"
+		resource "oci_identity_ui_password" "t" {
+			user_id = "${oci_identity_user.t.id}"
 		}
 	`
 	s.Config += testProviderConfig()
 
 	s.TimeCreated = baremetal.Time{Time: time.Now()}
-	s.ResourceName = "baremetal_identity_ui_password.t"
+	s.ResourceName = "oci_identity_ui_password.t"
 }
 
 func (s *ResourceIdentityUIPasswordTestSuite) TestCreateUIPassword() {
@@ -73,13 +72,12 @@ func (s *ResourceIdentityUIPasswordTestSuite) TestCreateUIPassword() {
 
 func (s ResourceIdentityUIPasswordTestSuite) TestUpdateVersionForcesNewUIPassword() {
 	config := `
-		resource "baremetal_identity_user" "t" {
-			name = "name1"
-			description = "desc!"
+		resource "oci_identity_user" "t" {
+			name = "-tf-user"
+			description = "automated test user"
 		}
-		resource "baremetal_identity_ui_password" "t" {
-			user_id = "${baremetal_identity_user.t.id}"
-			version = "2"
+		resource "oci_identity_ui_password" "t" {
+			user_id = "${oci_identity_user.t.id}"
 		}
   `
 	config += testProviderConfig()

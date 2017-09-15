@@ -5,6 +5,7 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,7 +15,7 @@ import (
 
 type ResourceCoreVolumesTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -28,26 +29,26 @@ func (s *ResourceCoreVolumesTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-	data "baremetal_identity_availability_domains" "ADs" {
+	data "oci_identity_availability_domains" "ADs" {
 		compartment_id = "${var.compartment_id}"
 	}
-	resource "baremetal_core_volume" "t" {
-		availability_domain = "${data.baremetal_identity_availability_domains.ADs.availability_domains.0.name}"
+	resource "oci_core_volume" "t" {
+		availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
 		compartment_id = "${var.compartment_id}"
 		display_name = "display_name"
 		size_in_mbs = 262144
 	}
-    data "baremetal_core_volumes" "t" {
-      availability_domain = "${data.baremetal_identity_availability_domains.ADs.availability_domains.0.name}"
+    data "oci_core_volumes" "t" {
+      availability_domain = "${data.oci_identity_availability_domains.ADs.availability_domains.0.name}"
       compartment_id = "${var.compartment_id}"
       limit = 1
     }
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_volumes.t"
+	s.ResourceName = "data.oci_core_volumes.t"
 }
 
 func (s *ResourceCoreVolumesTestSuite) TestReadVolumes() {

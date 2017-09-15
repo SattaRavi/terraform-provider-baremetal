@@ -9,14 +9,12 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-
 	"github.com/stretchr/testify/suite"
-	//"strconv"
 )
 
 type ResourceDatabaseDBSystemTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
 	Config       string
@@ -34,14 +32,14 @@ func (s *ResourceDatabaseDBSystemTestSuite) SetupTest() {
 	)
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 
 	s.Config = databaseConfig
 
 	s.Config += testProviderConfig()
 
-	s.ResourceName = "baremetal_database_db_system.t"
+	s.ResourceName = "oci_database_db_system.t"
 }
 
 func (s *ResourceDatabaseDBSystemTestSuite) TestCreateResourceDatabaseDBSystem() {

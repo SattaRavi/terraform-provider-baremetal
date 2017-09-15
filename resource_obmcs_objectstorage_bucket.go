@@ -3,13 +3,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"time"
-
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func BucketResource() *schema.Resource {
@@ -29,28 +28,28 @@ func BucketResource() *schema.Resource {
 func createBucket(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &BucketResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.CreateResource(d, sync)
 }
 
 func readBucket(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &BucketResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.ReadResource(sync)
 }
 
 func updateBucket(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &BucketResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.UpdateResource(d, sync)
 }
 
 func deleteBucket(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &BucketResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.DeleteResource(d, sync)
 }
 

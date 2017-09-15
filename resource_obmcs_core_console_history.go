@@ -3,13 +3,10 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/MustWin/baremetal-sdk-go"
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func ConsoleHistoryResource() *schema.Resource {
@@ -57,7 +54,7 @@ func ConsoleHistoryResource() *schema.Resource {
 }
 
 func createConsoleHistory(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	ichCrud := &ConsoleHistoryResourceCrud{}
 	ichCrud.D = d
 	ichCrud.Client = client
@@ -65,7 +62,7 @@ func createConsoleHistory(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readConsoleHistory(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	ichCrud := &ConsoleHistoryResourceCrud{}
 	ichCrud.D = d
 	ichCrud.Client = client
@@ -73,7 +70,9 @@ func readConsoleHistory(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteConsoleHistory(d *schema.ResourceData, m interface{}) (e error) {
-	return fmt.Errorf("console history resource: console history %v cannot be deleted", d.Id())
+	sync := &ConsoleHistoryResourceCrud{}
+	sync.D = d
+	return crud.DeleteResource(d, sync)
 }
 
 type ConsoleHistoryResourceCrud struct {
@@ -86,7 +85,7 @@ func (s *ConsoleHistoryResourceCrud) ID() string {
 }
 
 func (s *ConsoleHistoryResourceCrud) CreatedPending() []string {
-	return []string{baremetal.ResourceRequested}
+	return []string{baremetal.ResourceRequested, baremetal.ResourceGettingHistory}
 }
 
 func (s *ConsoleHistoryResourceCrud) CreatedTarget() []string {
@@ -107,6 +106,11 @@ func (s *ConsoleHistoryResourceCrud) Create() (e error) {
 
 func (s *ConsoleHistoryResourceCrud) Get() (e error) {
 	s.Res, e = s.Client.GetConsoleHistory(s.D.Id())
+	return
+}
+
+func (s *ConsoleHistoryResourceCrud) Delete() (e error) {
+	e = nil
 	return
 }
 

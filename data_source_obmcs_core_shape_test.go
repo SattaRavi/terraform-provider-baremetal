@@ -5,6 +5,7 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,7 +15,7 @@ import (
 
 type ResourceCoreShapeTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -28,19 +29,19 @@ func (s *ResourceCoreShapeTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-    data "baremetal_identity_availability_domains" "t" {
+    data "oci_identity_availability_domains" "t" {
       compartment_id = "${var.compartment_id}"
     }
-    data "baremetal_core_shape" "s" {
+    data "oci_core_shape" "s" {
       compartment_id = "${var.compartment_id}"
-      availability_domain = "${data.baremetal_identity_availability_domains.t.availability_domains.0.name}"
+      availability_domain = "${data.oci_identity_availability_domains.t.availability_domains.0.name}"
     }
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_shape.s"
+	s.ResourceName = "data.oci_core_shape.s"
 
 }
 

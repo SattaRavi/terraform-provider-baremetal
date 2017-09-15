@@ -5,6 +5,7 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -14,7 +15,7 @@ import (
 
 type ResourceCoreDrgsTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -28,16 +29,16 @@ func (s *ResourceCoreDrgsTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-	resource "baremetal_core_drg" "t" {
+	resource "oci_core_drg" "t" {
 		compartment_id = "${var.compartment_id}"
 		display_name = "display_name"
 	}
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_drgs.t"
+	s.ResourceName = "data.oci_core_drgs.t"
 }
 
 func (s *ResourceCoreDrgsTestSuite) TestReadDrgs() {
@@ -53,7 +54,7 @@ func (s *ResourceCoreDrgsTestSuite) TestReadDrgs() {
 			},
 			{
 				Config: s.Config + `
-				data "baremetal_core_drgs" "t" {
+				data "oci_core_drgs" "t" {
 					compartment_id = "${var.compartment_id}"
 					limit = 1
 				}`,
@@ -68,6 +69,6 @@ func (s *ResourceCoreDrgsTestSuite) TestReadDrgs() {
 
 }
 
-func TestResourceCoreDrgsTestSuite(t *testing.T) {
+func TestDatasourceCoreDrgsTestSuite(t *testing.T) {
 	suite.Run(t, new(ResourceCoreDrgsTestSuite))
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ResourceIdentityAPIKeysTestSuite struct {
+type DatasourceIdentityAPIKeysTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -24,22 +24,22 @@ type ResourceIdentityAPIKeysTestSuite struct {
 	List         *baremetal.ListAPIKeyResponses
 }
 
-func (s *ResourceIdentityAPIKeysTestSuite) SetupTest() {
+func (s *DatasourceIdentityAPIKeysTestSuite) SetupTest() {
 	s.Client = GetTestProvider()
 	s.Provider = Provider(func(d *schema.ResourceData) (interface{}, error) {
 		return s.Client, nil
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-	resource "baremetal_identity_user" "t" {
-			name = "name1"
-			description = "desc!"
+	resource "oci_identity_user" "t" {
+			name = "-tf-test"
+			description = "automated test user"
 		}
-		resource "baremetal_identity_api_key" "t" {
-			user_id = "${baremetal_identity_user.t.id}"
+		resource "oci_identity_api_key" "t" {
+			user_id = "${oci_identity_user.t.id}"
 			key_value = <<EOF
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtBLQAGmKJ7tpfzYJyqLG
@@ -55,7 +55,7 @@ EOF
 
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_identity_api_keys.t"
+	s.ResourceName = "data.oci_identity_api_keys.t"
 
 	b1 := baremetal.APIKey{
 		Fingerprint: "fingerprint",
@@ -74,7 +74,7 @@ EOF
 	}
 }
 
-func (s *ResourceIdentityAPIKeysTestSuite) TestReadAPIKeys() {
+func (s *DatasourceIdentityAPIKeysTestSuite) TestReadAPIKeys() {
 
 	resource.UnitTest(s.T(), resource.TestCase{
 		PreventPostDestroyRefresh: true,
@@ -87,8 +87,8 @@ func (s *ResourceIdentityAPIKeysTestSuite) TestReadAPIKeys() {
 			},
 			{
 				Config: s.Config + `
-				    data "baremetal_identity_api_keys" "t" {
-				      user_id = "${baremetal_identity_user.t.id}"
+				    data "oci_identity_api_keys" "t" {
+				      user_id = "${oci_identity_user.t.id}"
 				    }`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(s.ResourceName, "api_keys.0.id"),
@@ -98,9 +98,8 @@ func (s *ResourceIdentityAPIKeysTestSuite) TestReadAPIKeys() {
 		},
 	},
 	)
-
 }
 
-func TestResourceIdentityAPIKeysTestSuite(t *testing.T) {
-	suite.Run(t, new(ResourceIdentityAPIKeysTestSuite))
+func TestDatasourceIdentityAPIKeysTestSuite(t *testing.T) {
+	suite.Run(t, new(DatasourceIdentityAPIKeysTestSuite))
 }

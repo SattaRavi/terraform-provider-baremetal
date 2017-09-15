@@ -16,7 +16,7 @@ import (
 
 type ResourceIdentityPolicyTestSuite struct {
 	suite.Suite
-	Client      mockableClient
+	Client      *baremetal.Client
 	Provider    terraform.ResourceProvider
 	Providers   map[string]terraform.ResourceProvider
 	TimeCreated time.Time
@@ -32,28 +32,26 @@ func (s *ResourceIdentityPolicyTestSuite) SetupTest() {
 	},
 	)
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.TimeCreated, _ = time.Parse("2006-Jan-02", "2006-Jan-02")
 	s.Config = `
-	resource "baremetal_identity_group" "t" {
-		name = "HelpDesk"
-		description = "group desc!"
+	resource "oci_identity_group" "t" {
+		name = "-tf-group"
+		description = "automated test group"
 	}
-	data "baremetal_identity_compartments" "t" {
-     		compartment_id = "${var.compartment_id}"
-        }
-	  resource "baremetal_identity_policy" "p" {
-	    name = "HelpdeskUsers"
-	    description = "description"
-	    compartment_id = "${data.baremetal_identity_compartments.t.compartments.0.id}"
-	    statements = ["Allow group HelpDesk to read instances in compartment ${data.baremetal_identity_compartments.t.compartments.0.name}"]
-
-	    depends_on = ["baremetal_identity_group.t"]
-	  }
+	data "oci_identity_compartments" "t" {
+		compartment_id = "${var.compartment_id}"
+	}
+	resource "oci_identity_policy" "p" {
+		name = "-tf-policy"
+		description = "automated test policy"
+		compartment_id = "${data.oci_identity_compartments.t.compartments.0.id}"
+		statements = ["Allow group ${oci_identity_group.t.name} to read instances in compartment ${data.oci_identity_compartments.t.compartments.0.name}"]
+	}
 	`
 	s.Config += testProviderConfig()
-	s.PolicyName = "baremetal_identity_policy.p"
+	s.PolicyName = "oci_identity_policy.p"
 
 }
 
@@ -69,6 +67,7 @@ func (s *ResourceIdentityPolicyTestSuite) TestCreateResourceIdentityPolicy() {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(s.PolicyName, "id"),
 					resource.TestCheckResourceAttrSet(s.PolicyName, "time_created"),
+					resource.TestCheckResourceAttr(s.PolicyName, "statements.#", "1"),
 				),
 			},
 		},

@@ -4,11 +4,9 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 
 	"github.com/stretchr/testify/suite"
@@ -16,56 +14,78 @@ import (
 
 type ResourceCoreDHCPOptionsTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
-	TimeCreated  baremetal.Time
 	Config       string
 	ResourceName string
-	Res          *baremetal.DHCPOptions
-	DeletedRes   *baremetal.DHCPOptions
 }
 
 func (s *ResourceCoreDHCPOptionsTestSuite) SetupTest() {
-	s.Client = GetTestProvider()
-
-	s.Provider = Provider(
-		func(d *schema.ResourceData) (interface{}, error) {
-			return s.Client, nil
-		},
-	)
-
-	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
-	}
-
-	s.TimeCreated = baremetal.Time{Time: time.Now()}
-
-	s.Config = `
-	resource "baremetal_core_virtual_network" "t" {
+	s.Client = testAccClient
+	s.Provider = testAccProvider
+	s.Providers = testAccProviders
+	s.Config = testProviderConfig() + `
+	resource "oci_core_virtual_network" "t" {
 		cidr_block = "10.0.0.0/16"
 		compartment_id = "${var.compartment_id}"
 		display_name = "network_name"
 	}
-	resource "baremetal_core_dhcp_options" "t" {
-		compartment_id = "${var.compartment_id}"
-		display_name = "display_name"
-     		options {
-			type = "DomainNameServer"
-			custom_dns_servers = [ "8.8.8.8" ]
-			server_type = "CustomDnsServer"
-		}
-     		vcn_id = "${baremetal_core_virtual_network.t.id}"
-	}
-	`
-	s.Config += testProviderConfig()
 
-	s.ResourceName = "baremetal_core_dhcp_options.t"
+	resource "oci_core_dhcp_options" "opt1" {
+		compartment_id = "${var.compartment_id}"
+		vcn_id = "${oci_core_virtual_network.t.id}"
+		display_name = "display_name"
+		options {
+			type = "DomainNameServer"
+			server_type = "VcnLocalPlusInternet"
+		}
+	}
+
+	resource "oci_core_dhcp_options" "opt2" {
+		compartment_id = "${var.compartment_id}"
+		vcn_id = "${oci_core_virtual_network.t.id}"
+		display_name = "display_name"
+		options {
+			type = "DomainNameServer"
+			server_type = "VcnLocalPlusInternet"
+		}
+		options {
+			type = "SearchDomain"
+			search_domain_names = [ "test.com" ]
+		}
+	}
+
+	resource "oci_core_dhcp_options" "opt3" {
+		compartment_id = "${var.compartment_id}"
+		vcn_id = "${oci_core_virtual_network.t.id}"
+		display_name = "display_name"
+		options {
+			type = "DomainNameServer"
+			server_type = "CustomDnsServer"
+			custom_dns_servers = [  "8.8.4.4", "8.8.8.8" ]
+		}
+	}
+
+	resource "oci_core_dhcp_options" "opt4" {
+		compartment_id = "${var.compartment_id}"
+		vcn_id = "${oci_core_virtual_network.t.id}"
+		display_name = "display_name"
+		options {
+			type = "DomainNameServer"
+			server_type = "CustomDnsServer"
+			custom_dns_servers = [  "8.8.4.4", "8.8.8.8" ]
+		}
+		options {
+			type = "SearchDomain"
+			search_domain_names = [ "test.com" ]
+		}
+	}`
 }
 
-func (s *ResourceCoreDHCPOptionsTestSuite) TestCreateResourceCoreDHCPOptions() {
+func (s *ResourceCoreDHCPOptionsTestSuite) TestAccResourceCoreDHCPOptions_basic() {
 
-	resource.UnitTest(s.T(), resource.TestCase{
+	resource.Test(s.T(), resource.TestCase{
 		Providers: s.Providers,
 		Steps: []resource.TestStep{
 			{
@@ -74,32 +94,25 @@ func (s *ResourceCoreDHCPOptionsTestSuite) TestCreateResourceCoreDHCPOptions() {
 				Config:            s.Config,
 				Check: resource.ComposeTestCheckFunc(
 
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "display_name"),
-					resource.TestCheckResourceAttr(s.ResourceName, "options.0.type", "DomainNameServer"),
-					resource.TestCheckResourceAttr(s.ResourceName, "options.0.server_type", "CustomDnsServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt1", "display_name", "display_name"),
+
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt1", "options.0.type", "DomainNameServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt1", "options.0.server_type", "VcnLocalPlusInternet"),
+
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt2", "options.0.type", "DomainNameServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt2", "options.0.server_type", "VcnLocalPlusInternet"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt2", "options.1.type", "SearchDomain"),
+
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt3", "options.0.type", "DomainNameServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt3", "options.0.server_type", "CustomDnsServer"),
+
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt4", "options.0.type", "DomainNameServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt4", "options.0.server_type", "CustomDnsServer"),
+					resource.TestCheckResourceAttr("oci_core_dhcp_options.opt4", "options.1.type", "SearchDomain"),
 				),
 			},
 		},
 	})
-}
-
-func (s *ResourceCoreDHCPOptionsTestSuite) TestDeleteDHCPOptions() {
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
-			{
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config:            s.Config,
-			},
-			{
-				Config:  s.Config,
-				Destroy: true,
-			},
-		},
-	})
-
 }
 
 func TestResourceCoreDHCPOptionsTestSuite(t *testing.T) {

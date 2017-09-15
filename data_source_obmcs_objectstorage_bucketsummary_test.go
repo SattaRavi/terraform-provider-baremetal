@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -15,7 +16,7 @@ import (
 
 type ObjectstorageBucketSummaryTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -30,10 +31,10 @@ func (s *ObjectstorageBucketSummaryTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-	resource "baremetal_objectstorage_bucket" "t" {
+	resource "oci_objectstorage_bucket" "t" {
 		compartment_id = "${var.compartment_id}"
 		name = "bucketID"
 		namespace = "${var.namespace}"
@@ -43,7 +44,7 @@ func (s *ObjectstorageBucketSummaryTestSuite) SetupTest() {
 	}
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_objectstorage_bucket_summaries.t"
+	s.ResourceName = "data.oci_objectstorage_bucket_summaries.t"
 	s.TimeCreated = time.Now()
 }
 
@@ -59,7 +60,7 @@ func (s *ObjectstorageBucketSummaryTestSuite) TestReadBucketSummaries() {
 			},
 			{
 				Config: s.Config + `
-					data "baremetal_objectstorage_bucket_summaries" "t" {
+					data "oci_objectstorage_bucket_summaries" "t" {
 						compartment_id = "${var.compartment_id}"
 						namespace = "${var.namespace}"
 					}

@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func DrgResource() *schema.Resource {
@@ -48,7 +47,7 @@ func DrgResource() *schema.Resource {
 }
 
 func createDrg(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -56,7 +55,7 @@ func createDrg(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readDrg(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -64,7 +63,7 @@ func readDrg(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updateDrg(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -72,7 +71,7 @@ func updateDrg(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteDrg(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -124,13 +123,12 @@ func (s *DrgResourceCrud) Get() (e error) {
 
 func (s *DrgResourceCrud) Update() (e error) {
 	opts := &baremetal.IfMatchDisplayNameOptions{}
-	compartmentID := s.D.Get("compartment_id").(string)
-	displayName, ok := s.D.GetOk("display_name")
-	if ok {
+	
+	if displayName, ok := s.D.GetOk("display_name"); ok {
 		opts.DisplayName = displayName.(string)
 	}
 
-	s.Res, e = s.Client.UpdateDrg(compartmentID, opts)
+	s.Res, e = s.Client.UpdateDrg(s.D.Id(), opts)
 	return
 }
 

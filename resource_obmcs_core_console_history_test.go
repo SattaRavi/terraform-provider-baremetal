@@ -15,7 +15,7 @@ import (
 
 type ResourceCoreConsoleHistoryTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -24,27 +24,18 @@ type ResourceCoreConsoleHistoryTestSuite struct {
 }
 
 func (s *ResourceCoreConsoleHistoryTestSuite) SetupTest() {
-	s.Client = GetTestProvider()
-	s.Provider = Provider(func(d *schema.ResourceData) (interface{}, error) {
-		return s.Client, nil
-	})
+	s.Client = testAccClient
+	s.Provider = testAccProvider
+	s.Providers = testAccProviders
+	s.Config = testProviderConfig() + instanceConfig
 
 	p := s.Provider.(*schema.Provider)
-	res := p.ResourcesMap["baremetal_core_console_history"]
+	res := p.ResourcesMap["oci_core_console_history"]
 	res.Delete = func(d *schema.ResourceData, m interface{}) (e error) {
 		return nil
 	}
-
-	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
-	}
-	s.Config = instanceConfig + `
-    resource "baremetal_core_console_history" "t" {
-	instance_id = "${baremetal_core_instance.t.id}"
-    }
-  `
-	s.Config += testProviderConfig()
-	s.ResourceName = "baremetal_core_console_history.t"
+	
+	s.ResourceName = "oci_core_console_history.t"
 	s.Res = &baremetal.ConsoleHistoryMetadata{
 		AvailabilityDomain: "availability_domain",
 		CompartmentID:      "compartmentid",
@@ -55,18 +46,20 @@ func (s *ResourceCoreConsoleHistoryTestSuite) SetupTest() {
 	}
 	s.Res.ETag = "etag"
 	s.Res.RequestID = "opcrequestid"
-
 }
 
-func (s *ResourceCoreConsoleHistoryTestSuite) TestCreateResourceCoreInstanceConsoleHistory() {
+func (s *ResourceCoreConsoleHistoryTestSuite) TestAccResourceCoreInstanceConsoleHistory_basic() {
 
-	resource.UnitTest(s.T(), resource.TestCase{
+	resource.Test(s.T(), resource.TestCase{
 		Providers: s.Providers,
 		Steps: []resource.TestStep{
 			{
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            s.Config,
+				Config:            s.Config + `
+				resource "oci_core_console_history" "t" {
+					instance_id = "${oci_core_instance.t.id}"
+				}`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(s.ResourceName, "id"),
 				),

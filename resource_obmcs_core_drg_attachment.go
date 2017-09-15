@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func DrgAttachmentResource() *schema.Resource {
@@ -58,7 +57,7 @@ func DrgAttachmentResource() *schema.Resource {
 }
 
 func createDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgAttachmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -66,7 +65,7 @@ func createDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgAttachmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -74,7 +73,7 @@ func readDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updateDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgAttachmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -82,7 +81,7 @@ func updateDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteDrgAttachment(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &DrgAttachmentResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -139,13 +138,12 @@ func (s *DrgAttachmentResourceCrud) Get() (e error) {
 
 func (s *DrgAttachmentResourceCrud) Update() (e error) {
 	opts := &baremetal.IfMatchDisplayNameOptions{}
-	compartmentID := s.D.Get("compartment_id").(string)
-	displayName, ok := s.D.GetOk("display_name")
-	if ok {
+	
+	if displayName, ok := s.D.GetOk("display_name"); ok {
 		opts.DisplayName = displayName.(string)
 	}
 
-	s.Res, e = s.Client.UpdateDrgAttachment(compartmentID, opts)
+	s.Res, e = s.Client.UpdateDrgAttachment(s.D.Id(), opts)
 	return
 }
 

@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func VirtualNetworkResource() *schema.Resource {
@@ -69,7 +68,7 @@ func VirtualNetworkResource() *schema.Resource {
 }
 
 func createVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &VirtualNetworkResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -77,7 +76,7 @@ func createVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &VirtualNetworkResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -85,7 +84,7 @@ func readVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updateVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &VirtualNetworkResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -93,7 +92,7 @@ func updateVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deleteVirtualNetwork(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &VirtualNetworkResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -152,13 +151,13 @@ func (s *VirtualNetworkResourceCrud) Get() (e error) {
 
 func (s *VirtualNetworkResourceCrud) Update() (e error) {
 	opts := &baremetal.IfMatchDisplayNameOptions{}
-	compartmentID := s.D.Get("compartment_id").(string)
+	
 	displayName, ok := s.D.GetOk("display_name")
 	if ok {
 		opts.DisplayName = displayName.(string)
 	}
 
-	s.Res, e = s.Client.UpdateVirtualNetwork(compartmentID, opts)
+	s.Res, e = s.Client.UpdateVirtualNetwork(s.D.Id(), opts)
 	return
 }
 

@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 // Version is exposed to allow resetting an existing user's password.
@@ -48,7 +47,7 @@ func UIPasswordResource() *schema.Resource {
 }
 
 func createUIPassword(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &UIPasswordResourceCrud{}
 	sync.D = d
 	sync.Client = client

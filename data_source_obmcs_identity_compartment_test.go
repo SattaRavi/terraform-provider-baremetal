@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ResourceIdentityCompartmentsTestSuite struct {
+type DatasourceIdentityCompartmentsTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -24,22 +24,22 @@ type ResourceIdentityCompartmentsTestSuite struct {
 	List         *baremetal.ListCompartments
 }
 
-func (s *ResourceIdentityCompartmentsTestSuite) SetupTest() {
+func (s *DatasourceIdentityCompartmentsTestSuite) SetupTest() {
 	s.Client = GetTestProvider()
 	s.Provider = Provider(func(d *schema.ResourceData) (interface{}, error) {
 		return s.Client, nil
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = `
-    data "baremetal_identity_compartments" "t" {
+    data "oci_identity_compartments" "t" {
       compartment_id = "${var.compartment_id}"
     }
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_identity_compartments.t"
+	s.ResourceName = "data.oci_identity_compartments.t"
 
 	b1 := baremetal.Compartment{
 		ID:            "id",
@@ -58,7 +58,7 @@ func (s *ResourceIdentityCompartmentsTestSuite) SetupTest() {
 	}
 }
 
-func (s *ResourceIdentityCompartmentsTestSuite) TestReadCompartments() {
+func (s *DatasourceIdentityCompartmentsTestSuite) TestReadCompartments() {
 
 	resource.UnitTest(s.T(), resource.TestCase{
 		PreventPostDestroyRefresh: true,
@@ -78,6 +78,6 @@ func (s *ResourceIdentityCompartmentsTestSuite) TestReadCompartments() {
 	)
 }
 
-func TestResourceIdentityCompartmentsTestSuite(t *testing.T) {
-	suite.Run(t, new(ResourceIdentityCompartmentsTestSuite))
+func TestDatasourceIdentityCompartmentsTestSuite(t *testing.T) {
+	suite.Run(t, new(DatasourceIdentityCompartmentsTestSuite))
 }

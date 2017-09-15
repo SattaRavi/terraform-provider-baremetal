@@ -4,137 +4,76 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/suite"
 )
 
 type ResourceCoreInternetGatewayTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
-	TimeCreated  baremetal.Time
 	Config       string
 	ResourceName string
-	Res          *baremetal.InternetGateway
-	DeletedRes   *baremetal.InternetGateway
 }
 
 func (s *ResourceCoreInternetGatewayTestSuite) SetupTest() {
-	s.Client = GetTestProvider()
+	s.Client = testAccClient
+	s.Provider = testAccProvider
+	s.Providers = testAccProviders
+	s.Config = testProviderConfig() + `
+	resource "oci_core_virtual_network" "t" {
+		compartment_id = "${var.compartment_id}"
+		cidr_block = "10.0.0.0/16"
+		display_name = "-tf-vcn"
+	}`
 
-	s.Provider = Provider(
-		func(d *schema.ResourceData) (interface{}, error) {
-			return s.Client, nil
-		},
-	)
-
-	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
-	}
-
-	s.TimeCreated = baremetal.Time{Time: time.Now()}
-
-	s.Config = `
-resource "baremetal_core_virtual_network" "t" {
-	cidr_block = "10.0.0.0/16"
-	compartment_id = "${var.compartment_id}"
-	display_name = "display_name"
+	s.ResourceName = "oci_core_internet_gateway.t"
 }
 
-resource "baremetal_core_internet_gateway" "t" {
-    compartment_id = "${var.compartment_id}"
-    display_name = "display_name"
-    vcn_id = "${baremetal_core_virtual_network.t.id}"
-}
-	`
+func (s *ResourceCoreInternetGatewayTestSuite) TestAccResourceCoreInternetGateway_basic() {
 
-	s.Config += testProviderConfig()
-
-	s.ResourceName = "baremetal_core_internet_gateway.t"
-}
-
-func (s *ResourceCoreInternetGatewayTestSuite) TestCreateResourceCoreInternetGateway() {
-
-	resource.UnitTest(s.T(), resource.TestCase{
+	resource.Test(s.T(), resource.TestCase{
 		Providers: s.Providers,
 		Steps: []resource.TestStep{
+			// verify create
 			{
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            s.Config,
+				Config: s.Config +
+					`resource "oci_core_internet_gateway" "t" {
+					compartment_id = "${var.compartment_id}"
+					vcn_id = "${oci_core_virtual_network.t.id}"
+				}`,
 				Check: resource.ComposeTestCheckFunc(
-
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "display_name"),
 					resource.TestCheckResourceAttrSet(s.ResourceName, "id"),
-					resource.TestCheckResourceAttr(s.ResourceName, "state", baremetal.ResourceAvailable),
 					resource.TestCheckResourceAttrSet(s.ResourceName, "time_created"),
+					resource.TestCheckResourceAttrSet(s.ResourceName, "display_name"),
+					resource.TestCheckResourceAttr(s.ResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(s.ResourceName, "state", baremetal.ResourceAvailable),
 				),
 			},
-		},
-	})
-}
-
-func (s ResourceCoreInternetGatewayTestSuite) TestUpdateCompartmentIDForcesNewInternetGateway() {
-
-	config := `
-resource "baremetal_core_virtual_network" "t" {
-	cidr_block = "10.0.0.0/16"
-	compartment_id = "${var.compartment_id}"
-	display_name = "display_name"
-}
-
-resource "baremetal_core_internet_gateway" "t" {
-    compartment_id = "${var.compartment_id}"
-    display_name = "CompleteIG2"
-    vcn_id = "${baremetal_core_virtual_network.t.id}"
-}
-	`
-
-	config += testProviderConfig()
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
+			// verify update
 			{
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            s.Config,
-			},
-			{
-				Config: config,
+				Config: s.Config +
+					`resource "oci_core_internet_gateway" "t" {
+					compartment_id = "${var.compartment_id}"
+					vcn_id = "${oci_core_virtual_network.t.id}"
+					display_name = "-tf-internet-gateway"
+					enabled = false
+				}`,
 				Check: resource.ComposeTestCheckFunc(
-
-					resource.TestCheckResourceAttrSet(s.ResourceName, "id"),
-					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "CompleteIG2"),
+					resource.TestCheckResourceAttr(s.ResourceName, "display_name", "-tf-internet-gateway"),
+					resource.TestCheckResourceAttr(s.ResourceName, "enabled", "false"),
 				),
 			},
 		},
 	})
-}
-
-func (s *ResourceCoreInternetGatewayTestSuite) TestDeleteInternetGateway() {
-
-	resource.UnitTest(s.T(), resource.TestCase{
-		Providers: s.Providers,
-		Steps: []resource.TestStep{
-			{
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config:            s.Config,
-			},
-			{
-				Config:  s.Config,
-				Destroy: true,
-			},
-		},
-	})
-
 }
 
 func TestResourceCoreInternetGatewayTestSuite(t *testing.T) {

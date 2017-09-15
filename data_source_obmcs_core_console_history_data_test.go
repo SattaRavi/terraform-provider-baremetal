@@ -5,18 +5,17 @@ package main
 import (
 	"testing"
 
+	baremetal "github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-
-	"crypto/rand"
 
 	"github.com/stretchr/testify/suite"
 )
 
 type CoreConsoleHistoryDataDatasourceTestSuite struct {
 	suite.Suite
-	Client       mockableClient
+	Client       *baremetal.Client
 	Config       string
 	Provider     terraform.ResourceProvider
 	Providers    map[string]terraform.ResourceProvider
@@ -30,25 +29,22 @@ func (s *CoreConsoleHistoryDataDatasourceTestSuite) SetupTest() {
 	})
 
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.Config = instanceConfig + `
-    resource "baremetal_core_console_history" "t" {
-	instance_id = "${baremetal_core_instance.t.id}"
+    resource "oci_core_console_history" "t" {
+	instance_id = "${oci_core_instance.t.id}"
     }
-    data "baremetal_core_console_history_data" "s" {
-      console_history_id = "${baremetal_core_console_history.t.id}"
+    data "oci_core_console_history_data" "s" {
+      console_history_id = "${oci_core_console_history.t.id}"
       length = 10240
     }
   `
 	s.Config += testProviderConfig()
-	s.ResourceName = "data.baremetal_core_console_history_data.s"
+	s.ResourceName = "data.oci_core_console_history_data.s"
 }
 
 func (s *CoreConsoleHistoryDataDatasourceTestSuite) TestResourceShowConsoleHistory() {
-	data := make([]byte, 100)
-	rand.Read(data)
-
 	resource.UnitTest(s.T(), resource.TestCase{
 		PreventPostDestroyRefresh: true,
 		Providers:                 s.Providers,
@@ -58,7 +54,7 @@ func (s *CoreConsoleHistoryDataDatasourceTestSuite) TestResourceShowConsoleHisto
 				ImportStateVerify: true,
 				Config:            s.Config,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(s.ResourceName, "data", string(data)),
+					resource.TestCheckResourceAttrSet(s.ResourceName, "id"),
 				),
 			},
 		},
@@ -66,6 +62,6 @@ func (s *CoreConsoleHistoryDataDatasourceTestSuite) TestResourceShowConsoleHisto
 	)
 }
 
-func TestCoreInstanceConsoleHistoriesDatasource(t *testing.T) {
+func TestDatasourceCoreConsoleHistoryTestSuite(t *testing.T) {
 	suite.Run(t, new(CoreConsoleHistoryDataDatasourceTestSuite))
 }

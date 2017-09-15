@@ -7,10 +7,9 @@ import (
 
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/oracle/terraform-provider-baremetal/options"
+	"github.com/oracle/terraform-provider-oci/options"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func DBVersionDatasource() *schema.Resource {
@@ -30,8 +29,8 @@ func DBVersionDatasource() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"supports_pdb":{
-							Type: schema.TypeBool,
+						"supports_pdb": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 					},
@@ -50,7 +49,7 @@ func DBVersionDatasource() *schema.Resource {
 }
 
 func readDBVersions(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	reader := &DBVersionDatasourceCrud{}
 	reader.D = d
 	reader.Client = client
@@ -95,7 +94,7 @@ func (s *DBVersionDatasourceCrud) SetData() {
 		resources := []map[string]interface{}{}
 		for _, v := range s.Res.DBVersions {
 			res := map[string]interface{}{
-				"version": v.Version,
+				"version":      v.Version,
 				"supports_pdb": v.SupportsPDB,
 			}
 			resources = append(resources, res)

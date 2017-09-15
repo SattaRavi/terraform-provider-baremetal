@@ -2,20 +2,26 @@ GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
 
 default: build
 
-build_mocks:
-	cd client && mockery -case underscore -name BareMetalClient
-
 clean:
-	rm -rf terraform-provider-baremetal
+	rm -rf terraform-provider-oci
 	rm -rf bin/*
 
 fmt:
-	gofmt -w $(GOFMT_FILES)
+	goimports -w -local github.com/oracle/terraform-provider-oci $(GOFMT_FILES)
 
-test_acceptance_debug:
+show_tests:
+	grep -ohi "Test.*$(test).*TestSuite" *.go
+
+run_one:
+	TF_ORACLE_ENV=test TF_ACC=1 go test -v -timeout 120m -run $(test)
+
+run_one_debug:
+	TF_LOG=DEBUG DEBUG=true TF_ORACLE_ENV=test TF_ACC=1 go test -v -timeout 120m -run $(test)
+
+test_debug:
 	TF_LOG=DEBUG DEBUG=true TF_ORACLE_ENV=test TF_ACC=1 go test -v -timeout 120m
 
-test_acceptance:
+test:
 	# You MUST export these variables
 	# export TF_VAR_private_key_path=/Users/Mike/.ssh/oracle2
 	# export TF_VAR_fingerprint=46:08:e3:7b:95:0a:d6:5f:78:24:32:87:23:3f:56:31
@@ -26,16 +32,16 @@ test_acceptance:
 	TF_ORACLE_ENV=test TF_ACC=1 go test -v -timeout 120m
 
 build:
-	go build -o terraform-provider-baremetal
+	go build -o terraform-provider-oci
 
 version:
 	sed -i '' -e 's/version = ".*"/version = "\
-	$(shell curl -s https://api.github.com/repos/oracle/terraform-provider-baremetal/releases/latest | \
+	$(shell curl -s https://api.github.com/repos/oracle/terraform-provider-oci/releases/latest | \
 	jq -r '.tag_name')\
 	"/g' version.go
 
 release: clean version
-	gox -output "./bin/{{.OS}}_{{.Arch}}/terraform-provider-baremetal"
+	gox -output "./bin/{{.OS}}_{{.Arch}}/terraform-provider-oci"
 
 zip:
 	cd bin \

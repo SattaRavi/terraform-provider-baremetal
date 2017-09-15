@@ -1,8 +1,27 @@
-## Description of the bug:
+### Terraform Version
 
+<details>
+# Run this command to get the terraform version:
 
+$ terraform -v
 
-## A self-contained terraform file that reproduces the issue:
+</details>
 
-(If this is not provided, your ticket will be closed)
+### OCI Provider Version
 
+<details>
+# Execute the plugin directly to get the version:
+
+$ \<path-to-plugin\>/terraform-provider-oci
+
+</details>
+
+### Description:
+Include a description with repro steps, expected result and actual result
+
+### Terraform Plan
+
+<details>
+A self-contained terraform file that reproduces the issue. If this is not provided, your ticket may be closed.
+
+</details>

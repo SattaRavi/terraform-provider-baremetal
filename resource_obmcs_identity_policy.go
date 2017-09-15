@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func PolicyResource() *schema.Resource {
@@ -45,7 +44,7 @@ func PolicyResource() *schema.Resource {
 }
 
 func createPolicy(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &PolicyResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -53,7 +52,7 @@ func createPolicy(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func readPolicy(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &PolicyResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -61,7 +60,7 @@ func readPolicy(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func updatePolicy(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &PolicyResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -69,7 +68,7 @@ func updatePolicy(d *schema.ResourceData, m interface{}) (e error) {
 }
 
 func deletePolicy(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &PolicyResourceCrud{}
 	sync.D = d
 	sync.Client = client

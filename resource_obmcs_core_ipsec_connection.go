@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func IPSecConnectionResource() *schema.Resource {
@@ -47,6 +46,7 @@ func IPSecConnectionResource() *schema.Resource {
 			"display_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"state": {
 				Type:     schema.TypeString,
@@ -63,19 +63,19 @@ func IPSecConnectionResource() *schema.Resource {
 func createIPSec(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &IPSecConnectionResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.CreateResource(d, sync)
 }
 
 func readIPSec(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &IPSecConnectionResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.ReadResource(sync)
 }
 
 func updateIPSec(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &IPSecConnectionResourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -85,7 +85,7 @@ func updateIPSec(d *schema.ResourceData, m interface{}) (e error) {
 func deleteIPSec(d *schema.ResourceData, m interface{}) (e error) {
 	sync := &IPSecConnectionResourceCrud{}
 	sync.D = d
-	sync.Client = m.(client.BareMetalClient)
+	sync.Client = m.(*baremetal.Client)
 	return crud.DeleteResource(d, sync)
 }
 
@@ -147,13 +147,12 @@ func (s *IPSecConnectionResourceCrud) Get() (e error) {
 
 func (s *IPSecConnectionResourceCrud) Update() (e error) {
 	opts := &baremetal.IfMatchDisplayNameOptions{}
-	compartmentID := s.D.Get("compartment_id").(string)
 	displayName, ok := s.D.GetOk("display_name")
 	if ok {
 		opts.DisplayName = displayName.(string)
 	}
 
-	s.Resource, e = s.Client.UpdateIPSecConnection(compartmentID, opts)
+	s.Resource, e = s.Client.UpdateIPSecConnection(s.D.Id(), opts)
 	return
 }
 

@@ -8,8 +8,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func APIKeyDatasource() *schema.Resource {
@@ -30,7 +29,7 @@ func APIKeyDatasource() *schema.Resource {
 }
 
 func readAPIKeys(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &APIKeyDatasourceCrud{}
 	sync.D = d
 	sync.Client = client

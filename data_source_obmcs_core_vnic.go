@@ -6,8 +6,7 @@ import (
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
 )
 
 func VnicDatasource() *schema.Resource {
@@ -38,6 +37,14 @@ func VnicDatasource() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"is_primary": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"mac_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"state": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -54,12 +61,16 @@ func VnicDatasource() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"time_created": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
 
 func readVnic(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	sync := &VnicDatasourceCrud{}
 	sync.D = d
 	sync.Client = client
@@ -86,10 +97,13 @@ func (v *VnicDatasourceCrud) SetData() {
 		v.D.Set("compartment_id", v.Resource.CompartmentID)
 		v.D.Set("display_name", v.Resource.DisplayName)
 		v.D.Set("hostname_label", v.Resource.HostnameLabel)
+		v.D.Set("is_primary", v.Resource.IsPrimary)
+		v.D.Set("mac_address", v.Resource.MacAddress)
 		v.D.Set("state", v.Resource.State)
 		v.D.Set("private_ip_address", v.Resource.PrivateIPAddress)
 		v.D.Set("public_ip_address", v.Resource.PublicIPAddress)
 		v.D.Set("subnet_id", v.Resource.SubnetID)
+		v.D.Set("time_created", v.Resource.TimeCreated.String())
 	}
 	return
 }

@@ -3,14 +3,14 @@
 package main
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/oracle/terraform-provider-baremetal/options"
 
-	"github.com/oracle/terraform-provider-baremetal/client"
-	"github.com/oracle/terraform-provider-baremetal/crud"
+	"github.com/oracle/terraform-provider-oci/crud"
+	"github.com/oracle/terraform-provider-oci/options"
 )
 
 func InstanceDatasource() *schema.Resource {
@@ -74,6 +74,11 @@ func resourceCoreInstance() *schema.Resource {
 				Computed: true,
 				Elem:     schema.TypeString,
 			},
+			"extended_metadata": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     schema.TypeString,
+			},
 			"region": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -95,7 +100,7 @@ func resourceCoreInstance() *schema.Resource {
 }
 
 func readInstances(d *schema.ResourceData, m interface{}) (e error) {
-	client := m.(client.BareMetalClient)
+	client := m.(*baremetal.Client)
 	reader := &InstanceDatasourceCrud{}
 	reader.D = d
 	reader.Client = client
@@ -150,6 +155,7 @@ func (s *InstanceDatasourceCrud) SetData() {
 				"image":               v.ImageID,
 				"ipxe_script":         v.IpxeScript,
 				"metadata":            v.Metadata,
+				"extended_metadata":   convertNestedMapToFlatMap(v.ExtendedMetadata),
 				"region":              v.Region,
 				"shape":               v.Shape,
 				"state":               v.State,
@@ -160,4 +166,19 @@ func (s *InstanceDatasourceCrud) SetData() {
 		s.D.Set("instances", resources)
 	}
 	return
+}
+
+func convertNestedMapToFlatMap(m map[string]interface{}) map[string]string {
+	flatMap := make(map[string]string)
+	var ok bool
+	for key, val := range m {
+		if flatMap[key], ok = val.(string); !ok {
+			mapValStr, err := json.Marshal(val)
+			if err != nil {
+				mapValStr = []byte{}
+			}
+			flatMap[key] = string(mapValStr)
+		}
+	}
+	return flatMap
 }

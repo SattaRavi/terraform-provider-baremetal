@@ -6,17 +6,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MustWin/baremetal-sdk-go"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/MustWin/baremetal-sdk-go"
 )
 
-type ResourceIdentitySwiftPasswordsTestSuite struct {
+type DatasourceIdentitySwiftPasswordsTestSuite struct {
 	suite.Suite
-	Client        mockableClient
+	Client        *baremetal.Client
 	Provider      terraform.ResourceProvider
 	Providers     map[string]terraform.ResourceProvider
 	TimeCreated   time.Time
@@ -25,32 +24,32 @@ type ResourceIdentitySwiftPasswordsTestSuite struct {
 	PasswordList  baremetal.ListSwiftPasswords
 }
 
-func (s *ResourceIdentitySwiftPasswordsTestSuite) SetupTest() {
+func (s *DatasourceIdentitySwiftPasswordsTestSuite) SetupTest() {
 	s.Client = GetTestProvider()
 	s.Provider = Provider(func(d *schema.ResourceData) (interface{}, error) {
 		return s.Client, nil
 	},
 	)
 	s.Providers = map[string]terraform.ResourceProvider{
-		"baremetal": s.Provider,
+		"oci": s.Provider,
 	}
 	s.TimeCreated, _ = time.Parse("2006-Jan-02", "2006-Jan-02")
 	s.Config = `
-		resource "baremetal_identity_user" "t" {
+		resource "oci_identity_user" "t" {
 			name = "name1"
 			description = "desc!"
 		}
-		resource "baremetal_identity_swift_password" "t" {
-			user_id = "${baremetal_identity_user.t.id}"
+		resource "oci_identity_swift_password" "t" {
+			user_id = "${oci_identity_user.t.id}"
 			description = "desc"
 		}
 	`
 	s.Config += testProviderConfig()
-	s.PasswordsName = "data.baremetal_identity_swift_passwords.p"
+	s.PasswordsName = "data.oci_identity_swift_passwords.p"
 
 }
 
-func (s *ResourceIdentitySwiftPasswordsTestSuite) TestListResourceIdentitySwiftPasswords() {
+func (s *DatasourceIdentitySwiftPasswordsTestSuite) TestListResourceIdentitySwiftPasswords() {
 	resource.UnitTest(s.T(), resource.TestCase{
 		Providers: s.Providers,
 		Steps: []resource.TestStep{
@@ -61,8 +60,8 @@ func (s *ResourceIdentitySwiftPasswordsTestSuite) TestListResourceIdentitySwiftP
 			},
 			{
 				Config: s.Config + `
-				 data "baremetal_identity_swift_passwords" "p" {
-				    user_id = "${baremetal_identity_user.t.id}"
+				 data "oci_identity_swift_passwords" "p" {
+				    user_id = "${oci_identity_user.t.id}"
 				  }`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(s.PasswordsName, "passwords.0.id"),
@@ -74,6 +73,6 @@ func (s *ResourceIdentitySwiftPasswordsTestSuite) TestListResourceIdentitySwiftP
 	)
 }
 
-func TestResourceIdentitySwiftPasswordsTestSuite(t *testing.T) {
-	suite.Run(t, new(ResourceIdentitySwiftPasswordsTestSuite))
+func TestDatasourceIdentitySwiftPasswordsTestSuite(t *testing.T) {
+	suite.Run(t, new(DatasourceIdentitySwiftPasswordsTestSuite))
 }
